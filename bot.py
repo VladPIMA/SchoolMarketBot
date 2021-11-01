@@ -1,12 +1,10 @@
-import os
 import telebot
 import sqlite3
 import settings
 import change
 from telebot import types
 
-token = os.getenv("TOKEN")
-bot = telebot.TeleBot(token)
+bot = telebot.TeleBot(settings.TELEGRAM_TOKEN)
 
 # создание и подключение к бд
 try:
@@ -47,21 +45,81 @@ try:
 except sqlite3.OperationalError:
 	pass
 
+# поиск пользователя в бд
+def get_user_info(id):
+	try:
+		sqlite_connection = sqlite3.connect('schoolmarket.db')
+		cursor = sqlite_connection.cursor()
+
+		sql_select_query = """select * from repetitors where id = ?"""
+		cursor.execute(sql_select_query, (id,))
+		records = cursor.fetchone()
+		if records is None:
+			try:
+				sqlite_connection = sqlite3.connect('schoolmarket.db')
+				cursor = sqlite_connection.cursor()
+
+				sql_select_query = """select * from students where id = ?"""
+				cursor.execute(sql_select_query, (id,))
+				records = cursor.fetchone()
+				if records is None:
+					return 0
+
+					cursor.close()
+				else:
+					return 2
+
+			except sqlite3.Error as error:
+				print("Ошибка при работе с SQLite", error)
+		else:
+			return 1
+
+			cursor.close()
+
+	except sqlite3.Error as error:
+		print("Ошибка при работе с SQLite", error)
 
 @bot.message_handler(content_types=['text'])
 def start(message):
 	global status
 	chat_id = message.from_user.id
-	if message.text == '/reg':
-		keyboard = types.InlineKeyboardMarkup(); #наша клавиатура
-		key_student = types.InlineKeyboardButton(text='Ученик', callback_data='student');
-		keyboard.add(key_student); #добавляем кнопку в клавиатуру
-		key_repetitor= types.InlineKeyboardButton(text='Репетитор', callback_data='repetitor');
-		keyboard.add(key_repetitor);
-		question = 'Давай определимся с твоей ролью, нажми на кнопку, кем бы ты хотел быть =)';
-		bot.send_message(message.from_user.id, text=question, reply_markup=keyboard)
-	else:
-		bot.send_message(message.from_user.id, "Привет! Чтобы зарегистрироваться напиши /reg");
+
+	# вывод информации о пользователе сделать через клавиатуру
+	# if == 1 то репетитор
+	if get_user_info(chat_id) == 1:
+		cursor = sqlite_connection.cursor()
+		sql_select_query = """SELECT * FROM repetitors WHERE id = ?"""
+		cursor.execute(sql_select_query, (chat_id, ))
+		record = cursor.fetchone()
+		bot.send_message(message.from_user.id, "ID:" + str(record[0]) + '\n' + "Имя:" + record[1] + '\n' +
+												 "Фамилия:" + record[2] + '\n' + "Дата рождения:" + record[3] + '\n' +
+												  "Класс:" + record[4] + '\n' + "Предмет репетиторства:" + record[5] + '\n' +
+												  "Рейтинг:" + str(record[6]) + '\n' + "Баланс:" + str(record[7]))
+
+		cursor.close()
+	# if == 2 то ученик
+	elif get_user_info(chat_id) == 2:
+		cursor = sqlite_connection.cursor()
+		sql_select_query = """SELECT * FROM students WHERE id = ?"""
+		cursor.execute(sql_select_query, (chat_id, ))
+		record = cursor.fetchone()
+		bot.send_message(message.from_user.id, "ID:" + str(record[0]) + '\n' + "Имя:" + record[1] + '\n' +
+												 "Фамилия:" + record[2] + '\n' + "Дата рождения:" + record[3] + '\n' +
+												  "Класс:" + record[4] + '\n' + "Баланс:" + str(record[5]))
+
+		cursor.close()
+	# if == 0 то регистрация
+	elif get_user_info(chat_id) == 0:
+		if message.text == '/reg':
+			keyboard = types.InlineKeyboardMarkup(); #наша клавиатура
+			key_student = types.InlineKeyboardButton(text='Ученик', callback_data='student');
+			keyboard.add(key_student); #добавляем кнопку в клавиатуру
+			key_repetitor= types.InlineKeyboardButton(text='Репетитор', callback_data='repetitor');
+			keyboard.add(key_repetitor);
+			question = 'Давай определимся с твоей ролью, нажми на кнопку, кем бы ты хотел быть =)';
+			bot.send_message(message.from_user.id, text=question, reply_markup=keyboard)
+		else:
+			bot.send_message(message.from_user.id, "Привет! Чтобы зарегистрироваться напиши /reg");
 
 def get_name(message): #получаем фамилию
 	global name;
