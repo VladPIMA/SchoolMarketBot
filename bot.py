@@ -4,7 +4,7 @@ import settings
 import change
 from telebot import types
 
-bot = telebot.TeleBot('1905170581:AAGPf_Shp_DI13QLBDBXw0VQmLumPre_etg')
+bot = telebot.TeleBot(settings.TELEGRAM_TOKEN)
 
 # создание и подключение к бд
 try:
