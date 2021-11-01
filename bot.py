@@ -1,10 +1,12 @@
+import os
 import telebot
 import sqlite3
 import settings
 import change
 from telebot import types
 
-bot = telebot.TeleBot(settings.TELEGRAM_TOKEN)
+token = os.getenv("TOKEN")
+bot = telebot.TeleBot(token)
 
 # создание и подключение к бд
 try:
