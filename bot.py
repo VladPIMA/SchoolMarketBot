@@ -85,27 +85,15 @@ def start(message):
 	chat_id = message.from_user.id
 
 	# вывод информации о пользователе сделать через клавиатуру
-	# if == 1 то репетитор
-	if get_user_info(chat_id) == 1:
-		cursor = sqlite_connection.cursor()
-		sql_select_query = """SELECT * FROM repetitors WHERE id = ?"""
-		cursor.execute(sql_select_query, (chat_id, ))
-		record = cursor.fetchone()
-		bot.send_message(message.from_user.id, "ID:" + str(record[0]) + '\n' + "Имя:" + record[1] + '\n' +
-												 "Фамилия:" + record[2] + '\n' + "Дата рождения:" + record[3] + '\n' +
-												  "Класс:" + record[4] + '\n' + "Предмет репетиторства:" + record[5] + '\n' +
-												  "Рейтинг:" + str(record[6]) + '\n' + "Баланс:" + str(record[7]))
+	if get_user_info(chat_id) != 0:
 
-		cursor.close()
-	# if == 2 то ученик
-	elif get_user_info(chat_id) == 2:
-		cursor = sqlite_connection.cursor()
-		sql_select_query = """SELECT * FROM students WHERE id = ?"""
-		cursor.execute(sql_select_query, (chat_id, ))
-		record = cursor.fetchone()
-		bot.send_message(message.from_user.id, "ID:" + str(record[0]) + '\n' + "Имя:" + record[1] + '\n' +
-												 "Фамилия:" + record[2] + '\n' + "Дата рождения:" + record[3] + '\n' +
-												  "Класс:" + record[4] + '\n' + "Баланс:" + str(record[5]))
+		keyboard = types.InlineKeyboardMarkup(); #наша клавиатура
+		key_profile = types.InlineKeyboardButton(text='Мой профиль', callback_data='profile'); #кнопка «Да»
+		keyboard.add(key_profile); #добавляем кнопку в клавиатуру
+		key_taxi= types.InlineKeyboardButton(text='Заказать репетитора', callback_data='taxi');
+		keyboard.add(key_taxi);
+		question = 'Что бы ты хотел сделать? ';
+		bot.send_message(message.from_user.id, text=question, reply_markup=keyboard)
 
 		cursor.close()
 	# if == 0 то регистрация
@@ -225,8 +213,21 @@ def get_schoolClassRep(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
+	chat_id_key = call.message.chat.id
+
 	if call.data == "yes":
 		bot.send_message(call.message.chat.id, 'Запомню : )');
+
+		if get_user_info(chat_id_key) != 0:
+
+			keyboard = types.InlineKeyboardMarkup(); #наша клавиатура
+			key_profile = types.InlineKeyboardButton(text='Мой профиль', callback_data='profile'); #кнопка «Да»
+			keyboard.add(key_profile); #добавляем кнопку в клавиатуру
+			key_taxi= types.InlineKeyboardButton(text='Заказать репетитора', callback_data='taxi');
+			keyboard.add(key_taxi);
+			question = 'Что бы ты хотел сделать? ';
+			bot.send_message(chat_id_key, text=question, reply_markup=keyboard)
+
 	elif call.data == "no":
 		bot.send_message(call.message.chat.id, 'Что не так?');
 	elif call.data == "student":
@@ -249,6 +250,17 @@ def callback_worker(call):
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()
+
+		if get_user_info(chat_id_key) != 0:
+
+			keyboard = types.InlineKeyboardMarkup(); #наша клавиатура
+			key_profile = types.InlineKeyboardButton(text='Мой профиль', callback_data='profile'); #кнопка «Да»
+			keyboard.add(key_profile); #добавляем кнопку в клавиатуру
+			key_taxi= types.InlineKeyboardButton(text='Список заказов', callback_data='taxi');
+			keyboard.add(key_taxi);
+			question = 'Что бы ты хотел сделать? ';
+			bot.send_message(chat_id_key, text=question, reply_markup=keyboard)
+
 	elif call.data == 'math':
 		mathl = 'Mathematics'
 		cursor = sqlite_connection.cursor()
@@ -259,6 +271,17 @@ def callback_worker(call):
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()
+
+		if get_user_info(chat_id_key) != 0:
+
+			keyboard = types.InlineKeyboardMarkup(); #наша клавиатура
+			key_profile = types.InlineKeyboardButton(text='Мой профиль', callback_data='profile'); #кнопка «Да»
+			keyboard.add(key_profile); #добавляем кнопку в клавиатуру
+			key_taxi= types.InlineKeyboardButton(text='Список заказов', callback_data='taxi');
+			keyboard.add(key_taxi);
+			question = 'Что бы ты хотел сделать? ';
+			bot.send_message(chat_id_key, text=question, reply_markup=keyboard)
+
 	elif call.data == 'phys':
 		physl = 'Physics'
 		cursor = sqlite_connection.cursor()
@@ -269,6 +292,17 @@ def callback_worker(call):
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()
+
+		if get_user_info(chat_id_key) != 0:
+
+			keyboard = types.InlineKeyboardMarkup(); #наша клавиатура
+			key_profile = types.InlineKeyboardButton(text='Мой профиль', callback_data='profile'); #кнопка «Да»
+			keyboard.add(key_profile); #добавляем кнопку в клавиатуру
+			key_taxi= types.InlineKeyboardButton(text='Список заказов', callback_data='taxi');
+			keyboard.add(key_taxi);
+			question = 'Что бы ты хотел сделать? ';
+			bot.send_message(chat_id_key, text=question, reply_markup=keyboard)
+
 	elif call.data == 'chem':
 		cheml = 'Chemistry'
 		cursor = sqlite_connection.cursor()
@@ -279,6 +313,17 @@ def callback_worker(call):
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()
+
+		if get_user_info(chat_id_key) != 0:
+
+			keyboard = types.InlineKeyboardMarkup(); #наша клавиатура
+			key_profile = types.InlineKeyboardButton(text='Мой профиль', callback_data='profile'); #кнопка «Да»
+			keyboard.add(key_profile); #добавляем кнопку в клавиатуру
+			key_taxi= types.InlineKeyboardButton(text='Список заказов', callback_data='taxi');
+			keyboard.add(key_taxi);
+			question = 'Что бы ты хотел сделать? ';
+			bot.send_message(chat_id_key, text=question, reply_markup=keyboard)
+
 	elif call.data == 'bio':
 		biol = 'Biology'
 		cursor = sqlite_connection.cursor()
@@ -289,6 +334,17 @@ def callback_worker(call):
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()
+
+		if get_user_info(chat_id_key) != 0:
+
+			keyboard = types.InlineKeyboardMarkup(); #наша клавиатура
+			key_profile = types.InlineKeyboardButton(text='Мой профиль', callback_data='profile'); #кнопка «Да»
+			keyboard.add(key_profile); #добавляем кнопку в клавиатуру
+			key_taxi= types.InlineKeyboardButton(text='Список заказов', callback_data='taxi');
+			keyboard.add(key_taxi);
+			question = 'Что бы ты хотел сделать? ';
+			bot.send_message(chat_id_key, text=question, reply_markup=keyboard)
+
 	elif call.data == 'soc':
 		socl = 'Social'
 		cursor = sqlite_connection.cursor()
@@ -299,6 +355,17 @@ def callback_worker(call):
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()
+
+		if get_user_info(chat_id_key) != 0:
+
+			keyboard = types.InlineKeyboardMarkup(); #наша клавиатура
+			key_profile = types.InlineKeyboardButton(text='Мой профиль', callback_data='profile'); #кнопка «Да»
+			keyboard.add(key_profile); #добавляем кнопку в клавиатуру
+			key_taxi= types.InlineKeyboardButton(text='Список заказов', callback_data='taxi');
+			keyboard.add(key_taxi);
+			question = 'Что бы ты хотел сделать? ';
+			bot.send_message(chat_id_key, text=question, reply_markup=keyboard)
+
 	elif call.data == 'hist':
 		histl = 'History'
 		cursor = sqlite_connection.cursor()
@@ -309,6 +376,38 @@ def callback_worker(call):
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()
+
+		if get_user_info(chat_id_key) != 0:
+
+			keyboard = types.InlineKeyboardMarkup(); #наша клавиатура
+			key_profile = types.InlineKeyboardButton(text='Мой профиль', callback_data='profile'); #кнопка «Да»
+			keyboard.add(key_profile); #добавляем кнопку в клавиатуру
+			key_taxi= types.InlineKeyboardButton(text='Список заказов', callback_data='taxi');
+			keyboard.add(key_taxi);
+			question = 'Что бы ты хотел сделать? ';
+			bot.send_message(chat_id_key, text=question, reply_markup=keyboard)
+
+	elif call.data == 'profile':
+		if get_user_info(call.message.chat.id) == 1:
+			cursor = sqlite_connection.cursor()
+			sql_select_query = """SELECT * FROM repetitors WHERE id = ?"""
+			cursor.execute(sql_select_query, (call.message.chat.id, ))
+			record = cursor.fetchone()
+			bot.send_message(call.message.chat.id, "ID: " + str(record[0]) + '\n' + "Имя: " + record[1] + '\n' +
+													 "Фамилия: " + record[2] + '\n' + "Дата рождения: " + record[3] + '\n' +
+													  "Класс: " + record[4] + '\n' + "Предмет репетиторства: " + record[5] + '\n' +
+													  "Рейтинг: " + str(record[6]) + '\n' + "Баланс: " + str(record[7]))
+			cursor.close()
+
+		elif get_user_info(call.message.chat.id) == 2:
+			cursor = sqlite_connection.cursor()
+			sql_select_query = """SELECT * FROM students WHERE id = ?"""
+			cursor.execute(sql_select_query, (call.message.chat.id, ))
+			record = cursor.fetchone()
+			bot.send_message(call.message.chat.id, "ID: " + str(record[0]) + '\n' + "Имя: " + record[1] + '\n' +
+													 "Фамилия: " + record[2] + '\n' + "Дата рождения: " + record[3] + '\n' +
+													  "Класс: " + record[4] + '\n' + "Баланс: " + str(record[5]))
+			cursor.close()
 
 
 bot.polling(none_stop=True, interval=0)
