@@ -75,7 +75,7 @@ def get_user_info(id):
 		sqlite_connection = sqlite3.connect('schoolmarket.db')
 		cursor = sqlite_connection.cursor()
 
-		sql_select_query = """select * from repetitors where id = ?"""
+		sql_select_query = """SELECT * FROM repetitors WHERE id = ?"""
 		cursor.execute(sql_select_query, (id,))
 		records = cursor.fetchone()
 		if records is None:
@@ -326,8 +326,9 @@ def get_price(message):
 	global price
 	price = int(message.text)
 	chat_id_key = message.from_user.id
-	taxi.update_theme_and_price(unique_id, theme, rankrep, price)
-	bot.send_message(message.from_user.id, 'Твой заказ принят, ожидай отклика от репетитора')
+	
+	bot.send_message(message.from_user.id, 'Твой заказ принят, ожидай отклика от репетитора, у которого класс: ' +
+					 taxi.update_theme_and_price(message.from_user.id, unique_id, course_order, schoolclass, theme, rankrep, price))
 
 
 ''' ПОИСК ЗАКАЗА РЕПЕТИТОРОМ '''
@@ -352,12 +353,17 @@ def get_rep_info(message):
 		sql_select_query = """SELECT * FROM orders WHERE schoolclass <= ? AND course = ?"""
 		cursor.execute(sql_select_query, (schoolclassRepet, course,))
 		records = cursor.fetchall()
+		print(records)
+		mssg = ''
+		count = 1
 		for row in records:
-			msg = ("Имя ученика: " + row[6] + '\n'
+			msg = ("Заказ №" + str(count) + ": " + '\n' + "Имя ученика: " + row[6] + '\n'
 					 + "Школьный класс ученика: " + str(row[2]) + '\n'
 					 + "Проблемная тема: " + row[3] + '\n' 
-					 + "Предлагаемая цена за урок:" + str(row[7]))
-			bot.send_message(message.from_user.id, msg)
+					 + "Предлагаемая цена за урок: " + str(row[7]) + '\n' + '\n')
+			mssg += msg
+			count+= 1
+		bot.send_message(message.from_user.id, mssg)
 
 
 		sqlite_connection.commit()
@@ -371,6 +377,7 @@ def get_rep_info(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
+	global course_order
 	chat_id_key = call.message.chat.id
 
 	if call.data == "yes":
@@ -386,11 +393,13 @@ def callback_worker(call):
 
 		bot.send_message(call.message.chat.id, 'Как тебя зовут?');
 		bot.register_next_step_handler(call.message, get_name);
+		bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
 
 	elif call.data == "repetitor":
 
 		bot.send_message(call.message.chat.id, 'Как тебя зовут?');
 		bot.register_next_step_handler(call.message, get_nameRep);
+		bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
 
 	elif call.data == 'rus_lang':
 		rul = 'Russian Language'
@@ -502,9 +511,9 @@ def callback_worker(call):
 			sql_select_query = """SELECT * FROM repetitors WHERE id = ?"""
 			cursor.execute(sql_select_query, (call.message.chat.id, ))
 			record = cursor.fetchone()
-			bot.send_message(call.message.chat.id, "ID: " + str(record[0]) + '\n' + "Имя: " + record[1] + '\n' +
+			bot.send_message(call.message.chat.id, "ID: " + str(record[0]) + '\n' + "Имя: " + str(record[1]) + '\n' +
 													 "Фамилия: " + record[2] + '\n' + "Дата рождения: " + record[3] + '\n' +
-													  "Класс: " + record[4] + '\n' + "Предмет репетиторства: " + record[5] + '\n' +
+													  "Класс: " + str(record[4]) + '\n' + "Предмет репетиторства: " + record[5] + '\n' +
 													  "Ранг: " + str(record[6]) + '\n' + "Уровень: " + str(record[7]) + '\n' +
 													  "Рейтинг: " + str(record[8]) + '\n' + "Баланс: " + str(record[9]))
 			cursor.close()
@@ -517,7 +526,7 @@ def callback_worker(call):
 			record = cursor.fetchone()
 			bot.send_message(call.message.chat.id, "ID: " + str(record[0]) + '\n' + "Имя: " + record[1] + '\n' +
 													 "Фамилия: " + record[2] + '\n' + "Дата рождения: " + record[3] + '\n' +
-													  "Класс: " + record[4] + '\n' + "Баланс: " + str(record[5]))
+													  "Класс: " + str(record[4]) + '\n' + "Баланс: " + str(record[5]))
 			cursor.close()
 			bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
 
@@ -542,12 +551,12 @@ def callback_worker(call):
 
 
 	elif call.data == 'rus_lango':
-		rul = 'Russian Language'
+		course_order = 'Russian Language'
 		cursor = sqlite_connection.cursor()
 		updateCourse = """UPDATE orders 
 						SET course = ?
 						WHERE id = ?;"""
-		data = (rul, unique_id)
+		data = (course_order, unique_id)
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()
@@ -556,12 +565,12 @@ def callback_worker(call):
 		bot.register_next_step_handler(call.message, get_theme)
 
 	elif call.data == 'matho':
-		mathl = 'Mathematics'
+		course_order = 'Mathematics'
 		cursor = sqlite_connection.cursor()
 		updateCourse = """UPDATE orders 
 						SET course = ?
 						WHERE idt = ?;"""
-		data = (mathl, unique_id)
+		data = (course_order, unique_id)
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()
@@ -570,12 +579,12 @@ def callback_worker(call):
 		bot.register_next_step_handler(call.message, get_theme)
 
 	elif call.data == 'physo':
-		physl = 'Physics'
+		course_order = 'Physics'
 		cursor = sqlite_connection.cursor()
 		updateCourse = """UPDATE orders 
 						SET course = ?
 						WHERE id = ?;"""
-		data = (physl, unique_id)
+		data = (course_order, unique_id)
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()
@@ -584,12 +593,12 @@ def callback_worker(call):
 		bot.register_next_step_handler(call.message, get_theme)
 
 	elif call.data == 'chemo':
-		cheml = 'Chemistry'
+		course_order = 'Chemistry'
 		cursor = sqlite_connection.cursor()
 		updateCourse = """UPDATE orders 
 						SET course = ?
 						WHERE id = ?;"""
-		data = (cheml, unique_id)
+		data = (course_order, unique_id)
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()
@@ -598,12 +607,12 @@ def callback_worker(call):
 		bot.register_next_step_handler(call.message, get_theme)
 
 	elif call.data == 'bioo':
-		biol = 'Biology'
+		course_order = 'Biology'
 		cursor = sqlite_connection.cursor()
 		updateCourse = """UPDATE orders 
 						SET course = ?
 						WHERE id = ?;"""
-		data = (biol, unique_id)
+		data = (course_order, unique_id)
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()
@@ -612,12 +621,12 @@ def callback_worker(call):
 		bot.register_next_step_handler(call.message, get_theme)
 
 	elif call.data == 'soco':
-		socl = 'Social'
+		course_order = 'Social'
 		cursor = sqlite_connection.cursor()
 		updateCourse = """UPDATE orders 
 						SET course = ?
 						WHERE id = ?;"""
-		data = (socl, unique_id)
+		data = (course_order, unique_id)
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()
@@ -626,12 +635,12 @@ def callback_worker(call):
 		bot.register_next_step_handler(call.message, get_theme)
 
 	elif call.data == 'histo':
-		histl = 'History'
+		course_order = 'History'
 		cursor = sqlite_connection.cursor()
 		updateCourse = """UPDATE orders 
 						SET course = ?
 						WHERE id = ?;"""
-		data = (histl, unique_id)
+		data = (course_order, unique_id)
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()

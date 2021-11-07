@@ -11,7 +11,7 @@ try:
 except sqlite3.OperationalError:
 	pass
 
-def update_theme_and_price(unique_id, theme, rankrep, price):
+def update_theme_and_price(chat_id, unique_id, course_order, schoolclass, theme, rankrep, price):
 	# запись в бд
 	try:
 		cursor = sqlite_connection.cursor()
@@ -27,14 +27,42 @@ def update_theme_and_price(unique_id, theme, rankrep, price):
 		data_tuple = (price, unique_id)
 		cursor.execute(insert_data, data_tuple)
 
-		insert_data = """UPDATE orders 
-						SET rankrep = ?
-						WHERE id = ?"""
-		data_tuple = (rankrep, unique_id)
-		cursor.execute(insert_data, data_tuple)
+		sql_select_query = """SELECT * FROM repetitors WHERE course = ? AND schoolclass >= ? AND rank = ?"""
+		cursor.execute(sql_select_query, (course_order, schoolclass, rankrep,))
+		records = cursor.fetchall()
+		while(records == []):
+			if(rankrep == "Элит"):
+				rankrep = "Бизнес"
+				sql_select_query = """SELECT * FROM repetitors WHERE course = ? AND schoolclass >= ? AND rank = ?"""
+				cursor.execute(sql_select_query, (course_order, schoolclass, rankrep,))
+				records = cursor.fetchall()
+
+			elif(rankrep == "Бизнес"):
+				rankrep = "Комфорт"
+				sql_select_query = """SELECT * FROM repetitors WHERE course = ? AND schoolclass >= ? AND rank = ?"""
+				cursor.execute(sql_select_query, (course_order, schoolclass, rankrep,))
+				records = cursor.fetchall()
+
+			elif(rankrep == "Комфорт"):
+				rankrep = "Эконом"
+				sql_select_query = """SELECT * FROM repetitors WHERE course = ? AND schoolclass >= ? AND rank = ?"""
+				cursor.execute(sql_select_query, (course_order, schoolclass, rankrep,))
+				records = cursor.fetchall()
+			else:
+				bot.send_message(chat_id, 'Извините, но репетиторов выбранного вами класса ещё нет.')
+				break
+		bot.send_message(chat_id, 'Извините, но репетиторов выбранного вами класса ещё нет, поэтому мы предоставим вам репетитора классом чуть ниже.')
+		if (records != []):
+			insert_data = """UPDATE orders 
+							SET rankrep = ?
+							WHERE id = ?"""
+			data_tuple = (rankrep, unique_id)
+			cursor.execute(insert_data, data_tuple)
 
 		sqlite_connection.commit()
 		cursor.close()
 	except sqlite3.OperationalError:
 		pass
+	return rankrep
+
 
