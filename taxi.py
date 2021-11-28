@@ -11,8 +11,20 @@ try:
 except sqlite3.OperationalError:
 	pass
 
+def rep_course_is_exist(course):
+	avbl = "available"
+	notavbl = "not available"
+	cursor = sqlite_connection.cursor()
+
+	sql_select_query = """SELECT * FROM repetitors WHERE course = ?"""
+	cursor.execute(sql_select_query, (course,))
+	records = cursor.fetchone()
+	if records is None:
+		return notavbl
+	if records is not None:
+		return avbl 
+
 def update_theme_and_price(chat_id, unique_id, course_order, schoolclass, theme, rankrep, price):
-	# запись в бд
 	try:
 		cursor = sqlite_connection.cursor()
 		insert_data = """UPDATE orders 
@@ -30,6 +42,10 @@ def update_theme_and_price(chat_id, unique_id, course_order, schoolclass, theme,
 		sql_select_query = """SELECT * FROM repetitors WHERE course = ? AND schoolclass >= ? AND rank = ?"""
 		cursor.execute(sql_select_query, (course_order, schoolclass, rankrep,))
 		records = cursor.fetchall()
+
+		if (records == []):
+			bot.send_message(chat_id, 'Извините, но репетиторов выбранного вами класса ещё нет, поэтому мы предоставим вам репетитора классом чуть ниже.')
+
 		while(records == []):
 			if(rankrep == "Элит"):
 				rankrep = "Бизнес"
@@ -48,10 +64,7 @@ def update_theme_and_price(chat_id, unique_id, course_order, schoolclass, theme,
 				sql_select_query = """SELECT * FROM repetitors WHERE course = ? AND schoolclass >= ? AND rank = ?"""
 				cursor.execute(sql_select_query, (course_order, schoolclass, rankrep,))
 				records = cursor.fetchall()
-			else:
-				bot.send_message(chat_id, 'Извините, но репетиторов выбранного вами класса ещё нет.')
-				break
-		bot.send_message(chat_id, 'Извините, но репетиторов выбранного вами класса ещё нет, поэтому мы предоставим вам репетитора классом чуть ниже.')
+
 		if (records != []):
 			insert_data = """UPDATE orders 
 							SET rankrep = ?

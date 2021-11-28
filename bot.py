@@ -60,6 +60,7 @@ try:
 		"theme"	TEXT,
 		"rankrep"	TEXT,
 		"idstudent"	INTEGER,
+		"username" TEXT,
 		"namestudent"	TEXT,
 		"price"	INTEGER,
 	);"""
@@ -71,6 +72,8 @@ except sqlite3.OperationalError:
 
 # поиск пользователя в бд
 def get_user_info(id):
+	stud = "student"
+	rep = "repetitor"
 	try:
 		sqlite_connection = sqlite3.connect('schoolmarket.db')
 		cursor = sqlite_connection.cursor()
@@ -91,12 +94,12 @@ def get_user_info(id):
 
 					cursor.close()
 				else:
-					return 2
+					return stud
 
 			except sqlite3.Error as error:
 				print("Ошибка при работе с SQLite", error)
 		else:
-			return 1
+			return rep
 
 			cursor.close()
 
@@ -111,9 +114,9 @@ def start(message):
 
 	# вывод информации о пользователе сделать через клавиатуру
 #	if get_user_info(chat_id) != 0:
-	if get_user_info(chat_id) == 2:
+	if get_user_info(chat_id) == "student":
 		bot.send_message(message.from_user.id, text = 'Что бы ты хотел сделать?', reply_markup = menu.student_menu())
-	elif get_user_info(chat_id) == 1:
+	elif get_user_info(chat_id) == "repetitor":
 		bot.send_message(message.from_user.id, text = 'Что бы ты хотел сделать?', reply_markup = menu.repetitors_menu())
 	# if == 0 то регистрация
 	elif get_user_info(chat_id) == 0:
@@ -242,30 +245,42 @@ def get_schoolclass(message):
 	hide_markup = telebot.types.ReplyKeyboardRemove()
 	bot.send_message(message.from_user.id, 'Прекрасно!', reply_markup=hide_markup)
 
-	global schoolclass;
-	global idstudent;
-	global namestudent;
-	idstudent = message.from_user.id
+	global schoolclass
+	global idstudent
+	global namestudent
 	global unique_id
+	global usernamestudtg
+
+	idstudent = message.from_user.id
 	unique_id = str(uuid.uuid1())
+	usernamestudtg = message.from_user.username
 
 	try:
 		sqlite_connection = sqlite3.connect('schoolmarket.db')
 		cursor = sqlite_connection.cursor()
 
-		sqlite_select_query = """SELECT * from students where id = ?"""
+		if get_user_info(message.from_user.id) == "students":
+			sqlite_select_query = """SELECT * from students where id = ?"""
+		elif get_user_info(message.from_user.id) == "repetitor":
+			sqlite_select_query = """SELECT * from repetitors where id = ?"""
+
 		cursor.execute(sqlite_select_query, (idstudent, ))
 		record = cursor.fetchone()
 		schoolclass = int(record[4])
 
-		sqlite_select_query = """SELECT * from students where id = ?"""
+		
+		if get_user_info(message.from_user.id) == "students":
+			sqlite_select_query = """SELECT * from students where id = ?"""
+		elif get_user_info(message.from_user.id) == "repetitor":
+			sqlite_select_query = """SELECT * from repetitors where id = ?"""
+
 		cursor.execute(sqlite_select_query, (idstudent, ))
 		record = cursor.fetchone()
 		namestudent = record[1]  + ' ' + record[2]
 
-		insert_data = """INSERT INTO orders(id, schoolclass, theme, idstudent, namestudent, price)
-							VALUES (?, ?, "0", ?, ?, 0);"""
-		data_tuple = (unique_id, schoolclass, idstudent, namestudent)
+		insert_data = """INSERT INTO orders(id, schoolclass, theme, idstudent, username, namestudent, price)
+							VALUES (?, ?, "0", ?, ?, ?, 0);"""
+		data_tuple = (unique_id, schoolclass, idstudent, usernamestudtg, namestudent)
 		cursor.execute(insert_data, data_tuple)
 		sqlite_connection.commit()
 
@@ -273,7 +288,6 @@ def get_schoolclass(message):
 
 	except sqlite3.Error as error:
 		print("Ошибка при работе с SQLite", error)
-
 	get_course(idstudent)
 
 
@@ -337,40 +351,40 @@ def get_rep_info(message):
 	hide_markup = telebot.types.ReplyKeyboardRemove()
 	bot.send_message(message.from_user.id, 'Прекрасно!', reply_markup=hide_markup)
 
-	global schoolclassRepet;
+	global schoolclassRepet
 	global course
+	global unique_id_order
 
-	try:
-		sqlite_connection = sqlite3.connect('schoolmarket.db')
-		cursor = sqlite_connection.cursor()
+	sqlite_connection = sqlite3.connect('schoolmarket.db')
+	cursor = sqlite_connection.cursor()
 
-		sql_select_query = """SELECT * FROM repetitors WHERE id = ?"""
-		cursor.execute(sql_select_query, (message.from_user.id,))
-		records = cursor.fetchone()
-		schoolclassRepet = int(records[4])
-		course = records[5]
-		
-		sql_select_query = """SELECT * FROM orders WHERE schoolclass <= ? AND course = ?"""
-		cursor.execute(sql_select_query, (schoolclassRepet, course,))
-		records = cursor.fetchall()
-		print(records)
-		mssg = ''
-		count = 1
-		for row in records:
-			msg = ("Заказ №" + str(count) + ": " + '\n' + "Имя ученика: " + row[6] + '\n'
-					 + "Школьный класс ученика: " + str(row[2]) + '\n'
-					 + "Проблемная тема: " + row[3] + '\n' 
-					 + "Предлагаемая цена за урок: " + str(row[7]) + '\n' + '\n')
-			mssg += msg
-			count+= 1
-		bot.send_message(message.from_user.id, mssg)
+	sql_select_query = """SELECT * FROM repetitors WHERE id = ?"""
+	cursor.execute(sql_select_query, (message.from_user.id,))
+	records = cursor.fetchone()
+	schoolclassRepet = int(records[4])
+	course = records[5]
+	
+	sql_select_query = """SELECT * FROM orders WHERE schoolclass <= ? AND course = ?"""
+	cursor.execute(sql_select_query, (schoolclassRepet, course,))
+	records = cursor.fetchall()
+	mssg = ''
+	count = 1
+	for row in records:
+		msg = ("Заказ №" + str(count) + ": " + '\n' + "Имя ученика: " + row[7] + '\n'
+				 + "Школьный класс ученика: " + str(row[2]) + '\n'
+				 + "Проблемная тема: " + row[3] + '\n' 
+				 + "Предлагаемая цена за урок: " + str(row[8]) + '\n' + '\n')
+#			mssg += msg
+		count+= 1
 
+		unique_id_order = row[0]
+		keyboard = types.InlineKeyboardMarkup(); #наша клавиатура
+		key_order = types.InlineKeyboardButton(text='Выбрать этот заказ', callback_data='order'); #кнопка «Да»
+		keyboard.add(key_order); #добавляем кнопку в клавиатуру
+		bot.send_message(message.from_user.id, msg, reply_markup=keyboard)
 
-		sqlite_connection.commit()
-		cursor.close()
-
-	except sqlite3.Error as error:
-		print("Ошибка при работе с SQLite", error)
+	sqlite_connection.commit()
+	cursor.close()
 
 
 ''' ХЭНДЛЕР ДЛЯ КНОПОК КЛАВИАТУРЫ '''
@@ -506,7 +520,7 @@ def callback_worker(call):
 			bot.send_message(call.message.chat.id, text = 'Что бы ты хотел сделать?', reply_markup = menu.repetitors_menu())
 
 	elif call.data == 'profile':
-		if get_user_info(call.message.chat.id) == 1:
+		if get_user_info(call.message.chat.id) == 'repetitor':
 			cursor = sqlite_connection.cursor()
 			sql_select_query = """SELECT * FROM repetitors WHERE id = ?"""
 			cursor.execute(sql_select_query, (call.message.chat.id, ))
@@ -519,7 +533,7 @@ def callback_worker(call):
 			cursor.close()
 			bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
 
-		elif get_user_info(call.message.chat.id) == 2:
+		elif get_user_info(call.message.chat.id) == 'student':
 			cursor = sqlite_connection.cursor()
 			sql_select_query = """SELECT * FROM students WHERE id = ?"""
 			cursor.execute(sql_select_query, (call.message.chat.id, ))
@@ -561,8 +575,15 @@ def callback_worker(call):
 		sqlite_connection.commit()
 		cursor.close()
 
-		bot.send_message(call.message.chat.id, 'Какая тема?')
-		bot.register_next_step_handler(call.message, get_theme)
+		if (taxi.rep_course_is_exist(course_order) == 'available'):
+			bot.send_message(call.message.chat.id, 'Какая тема?')
+			bot.register_next_step_handler(call.message, get_theme)
+		else:
+			cursor = sqlite_connection.cursor()
+			sql_select_query = """DELETE FROM orders WHERE id = ?"""
+			cursor.execute(sql_select_query, (unique_id,))
+			sqlite_connection.commit()
+			bot.send_message(call.message.chat.id, 'Извините, но репетиторов выбранного вами класса ещё нет.')
 
 	elif call.data == 'matho':
 		course_order = 'Mathematics'
@@ -574,9 +595,15 @@ def callback_worker(call):
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()
-
-		bot.send_message(call.message.chat.id, 'Какая тема?')
-		bot.register_next_step_handler(call.message, get_theme)
+		if (taxi.rep_course_is_exist(course_order) == 'available'):
+			bot.send_message(call.message.chat.id, 'Какая тема?')
+			bot.register_next_step_handler(call.message, get_theme)
+		else:
+			cursor = sqlite_connection.cursor()
+			sql_select_query = """DELETE FROM orders WHERE id = ?"""
+			cursor.execute(sql_select_query, (unique_id,))
+			sqlite_connection.commit()
+			bot.send_message(call.message.chat.id, 'Извините, но репетиторов выбранного вами класса ещё нет.')
 
 	elif call.data == 'physo':
 		course_order = 'Physics'
@@ -588,9 +615,16 @@ def callback_worker(call):
 		cursor.execute(updateCourse, data)
 		sqlite_connection.commit()
 		cursor.close()
-
-		bot.send_message(call.message.chat.id, 'Какая тема?')
-		bot.register_next_step_handler(call.message, get_theme)
+		if (taxi.rep_course_is_exist(course_order) == 'available'):
+			bot.send_message(call.message.chat.id, 'Какая тема?')
+			bot.register_next_step_handler(call.message, get_theme)
+		else:
+			cursor = sqlite_connection.cursor()
+			sql_select_query = """DELETE FROM orders WHERE id = ?"""
+			cursor.execute(sql_select_query, (unique_id,))
+			sqlite_connection.commit()
+			bot.send_message(call.message.chat.id, 'Извините, но репетиторов выбранного вами класса ещё нет.')
+			
 
 	elif call.data == 'chemo':
 		course_order = 'Chemistry'
@@ -603,8 +637,15 @@ def callback_worker(call):
 		sqlite_connection.commit()
 		cursor.close()
 
-		bot.send_message(call.message.chat.id, 'Какая тема?')
-		bot.register_next_step_handler(call.message, get_theme)
+		if (taxi.rep_course_is_exist(course_order) == 'available'):
+			bot.send_message(call.message.chat.id, 'Какая тема?')
+			bot.register_next_step_handler(call.message, get_theme)
+		else:
+			cursor = sqlite_connection.cursor()
+			sql_select_query = """DELETE FROM orders WHERE id = ?"""
+			cursor.execute(sql_select_query, (unique_id,))
+			sqlite_connection.commit()
+			bot.send_message(call.message.chat.id, 'Извините, но репетиторов выбранного вами класса ещё нет.')
 
 	elif call.data == 'bioo':
 		course_order = 'Biology'
@@ -617,8 +658,15 @@ def callback_worker(call):
 		sqlite_connection.commit()
 		cursor.close()
 
-		bot.send_message(call.message.chat.id, 'Какая тема?')
-		bot.register_next_step_handler(call.message, get_theme)
+		if (taxi.rep_course_is_exist(course_order) == 'available'):
+			bot.send_message(call.message.chat.id, 'Какая тема?')
+			bot.register_next_step_handler(call.message, get_theme)
+		else:
+			cursor = sqlite_connection.cursor()
+			sql_select_query = """DELETE FROM orders WHERE id = ?"""
+			cursor.execute(sql_select_query, (unique_id,))
+			sqlite_connection.commit()
+			bot.send_message(call.message.chat.id, 'Извините, но репетиторов выбранного вами класса ещё нет.')
 
 	elif call.data == 'soco':
 		course_order = 'Social'
@@ -631,8 +679,15 @@ def callback_worker(call):
 		sqlite_connection.commit()
 		cursor.close()
 
-		bot.send_message(call.message.chat.id, 'Какая тема?')
-		bot.register_next_step_handler(call.message, get_theme)
+		if (taxi.rep_course_is_exist(course_order) == 'available'):
+			bot.send_message(call.message.chat.id, 'Какая тема?')
+			bot.register_next_step_handler(call.message, get_theme)
+		else:
+			cursor = sqlite_connection.cursor()
+			sql_select_query = """DELETE FROM orders WHERE id = ?"""
+			cursor.execute(sql_select_query, (unique_id,))
+			sqlite_connection.commit()
+			bot.send_message(call.message.chat.id, 'Извините, но репетиторов выбранного вами класса ещё нет.')
 
 	elif call.data == 'histo':
 		course_order = 'History'
@@ -645,8 +700,37 @@ def callback_worker(call):
 		sqlite_connection.commit()
 		cursor.close()
 
-		bot.send_message(call.message.chat.id, 'Какая тема?')
-		bot.register_next_step_handler(call.message, get_theme)
+		if (taxi.rep_course_is_exist(course_order) == 'available'):
+			bot.send_message(call.message.chat.id, 'Какая тема?')
+			bot.register_next_step_handler(call.message, get_theme)
+		else:
+			cursor = sqlite_connection.cursor()
+			sql_select_query = """DELETE FROM orders WHERE id = ?"""
+			cursor.execute(sql_select_query, (unique_id,))
+			sqlite_connection.commit()
+			bot.send_message(call.message.chat.id, 'Извините, но репетиторов выбранного вами класса ещё нет.')
 
+	elif call.data == 'order':
+		bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+
+		# СДЕЛАТЬ ВЫВОД ИНФОРМАЦИИ УЧЕНИКУ И РЕПЕТУ О ПРИНЯТИИ ЗАКАЗА
+		# СДЕЛАТЬ ПОДТВЕРЖДЕНИЕ ПРОШЕДШЕГО ЗАНЯТИЯ
+		cursor = sqlite_connection.cursor()
+		sql_select_query = """SELECT * FROM orders WHERE id = ?"""
+		cursor.execute(sql_select_query, (unique_id_order,))
+		record = cursor.fetchone()
+		id_student = int(record[5])
+		name_student = record[6]
+		
+
+		# msg репету
+		bot.send_message(call.message.chat.id, 'Замечательно! Договориcь о времени и месте занятия в личных сообщениях с учеником - @' + name_student)
+		bot.send_message(call.message.chat.id, "Имя и фамилия ученика: " + record[7] + '\n' + "Класс: " + str(record[2]) + '\n' +
+												"Проблемная тема: " + record[3] + '\n' + "Предлагаемая цена за урок: " + str(record[8]))
+
+
+		# msg ученику
+		bot.send_message(id_student, 'Спешу тебя обрадовать! Твой заказ принял репетитор - @' + call.message.chat.username + '\n'
+							+ 'Скорее договаривайтесь о месте и времени занятия в личных сообщениях!')
 
 bot.polling(none_stop=True, interval=0)
