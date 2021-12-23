@@ -257,39 +257,37 @@ def get_schoolclass(message):
 	unique_id = str(uuid.uuid1())
 	usernamestudtg = message.from_user.username
 
-	try:
-		sqlite_connection = sqlite3.connect('schoolmarket.db')
-		cursor = sqlite_connection.cursor()
 
-		if get_user_info(message.from_user.id) == "students":
-			sqlite_select_query = """SELECT * from students where id = ?"""
-		elif get_user_info(message.from_user.id) == "repetitor":
-			sqlite_select_query = """SELECT * from repetitors where id = ?"""
+	sqlite_connection = sqlite3.connect('schoolmarket.db')
+	cursor = sqlite_connection.cursor()
 
-		cursor.execute(sqlite_select_query, (idstudent, ))
-		record = cursor.fetchone()
-		schoolclass = int(record[4])
+	if get_user_info(message.from_user.id) == "student":
+		sqlite_select_query = """SELECT * from students where id = ?"""
+	elif get_user_info(message.from_user.id) == "repetitor":
+		sqlite_select_query = """SELECT * from repetitors where id = ?"""
 
-		
-		if get_user_info(message.from_user.id) == "students":
-			sqlite_select_query = """SELECT * from students where id = ?"""
-		elif get_user_info(message.from_user.id) == "repetitor":
-			sqlite_select_query = """SELECT * from repetitors where id = ?"""
+	cursor.execute(sqlite_select_query, (idstudent, ))
+	record = cursor.fetchone()
+	schoolclass = int(record[4])
 
-		cursor.execute(sqlite_select_query, (idstudent, ))
-		record = cursor.fetchone()
-		namestudent = record[1]  + ' ' + record[2]
+	
+	if get_user_info(message.from_user.id) == "students":
+		sqlite_select_query = """SELECT * from students where id = ?"""
+	elif get_user_info(message.from_user.id) == "repetitor":
+		sqlite_select_query = """SELECT * from repetitors where id = ?"""
 
-		insert_data = """INSERT INTO orders(id, isactive, schoolclass, theme, idstudent, idrep, username, namestudent, price)
-							VALUES (?, 1, ?, "0", ?, 0, ?, ?, 0);"""
-		data_tuple = (unique_id, schoolclass, idstudent, usernamestudtg, namestudent)
-		cursor.execute(insert_data, data_tuple)
-		sqlite_connection.commit()
+	cursor.execute(sqlite_select_query, (idstudent, ))
+	record = cursor.fetchone()
+	namestudent = record[1]  + ' ' + record[2]
 
-		cursor.close()
+	insert_data = """INSERT INTO orders(id, isactive, schoolclass, theme, idstudent, idrep, username, namestudent, price)
+						VALUES (?, 1, ?, "0", ?, 0, ?, ?, 0);"""
+	data_tuple = (unique_id, schoolclass, idstudent, usernamestudtg, namestudent)
+	cursor.execute(insert_data, data_tuple)
+	sqlite_connection.commit()
 
-	except sqlite3.Error as error:
-		print("Ошибка при работе с SQLite", error)
+	cursor.close()
+
 	get_course(idstudent)
 
 
